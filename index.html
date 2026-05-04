@@ -1,0 +1,683 @@
+bash
+
+cat << 'ENDOFFILE'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Home HQ">
+<title>Home HQ</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e5e5e5;padding:16px 20px;position:sticky;top:0;z-index:10}
+.header-inner{max-width:600px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:20px;font-weight:600}
+.header p{font-size:13px;color:#888;margin-top:2px}
+.container{max-width:600px;margin:0 auto;padding:16px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.metric{background:#fff;border-radius:12px;padding:12px;text-align:center;border:1px solid #e5e5e5}
+.metric-label{font-size:11px;color:#888;margin-bottom:4px}
+.metric-value{font-size:22px;font-weight:600}
+.tabs{display:flex;background:#fff;border-radius:12px;padding:4px;margin-bottom:16px;border:1px solid #e5e5e5}
+.tab{flex:1;padding:8px;text-align:center;font-size:14px;font-weight:500;border-radius:8px;cursor:pointer;border:none;background:none;color:#888}
+.tab.active{background:#1a1a1a;color:#fff}
+.section{display:none}.section.active{display:block}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px;border:1px solid #e5e5e5}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.card-title{font-size:15px;font-weight:600}
+.card-sub{font-size:13px;color:#888;margin-top:2px}
+.badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.badge-urgent{background:#fee2e2;color:#991b1b}
+.badge-high{background:#fef3c7;color:#92400e}
+.badge-medium{background:#dbeafe;color:#1e40af}
+.badge-low{background:#dcfce7;color:#166534}
+.badge-planned{background:#f3f4f6;color:#374151}
+.badge-inprogress{background:#fef9c3;color:#854d0e}
+.badge-done{background:#dcfce7;color:#166534}
+.card-desc{font-size:13px;color:#555;margin:8px 0;line-height:1.5}
+.card-notes{font-size:12px;color:#888;background:#f9f9f9;padding:8px 10px;border-radius:8px;margin:8px 0;line-height:1.5}
+.card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0}
+.card-cost{font-size:13px;color:#555}
+.card-cost strong{color:#1a1a1a}
+.btn{padding:8px 14px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;font-size:13px;font-weight:500;cursor:pointer;color:#1a1a1a}
+.btn:active{opacity:0.7}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-danger{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-group{display:flex;gap:6px}
+.fab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:#1a1a1a;color:#fff;font-size:24px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:17px;font-weight:600;margin-bottom:16px}
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:13px;color:#888;margin-bottom:4px;font-weight:500}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:10px 12px;border:1px solid #e5e5e5;border-radius:10px;font-size:15px;background:#fff;color:#1a1a1a;-webkit-appearance:none}
+.form-row textarea{resize:vertical;min-height:80px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-footer{display:flex;gap:8px;margin-top:16px;padding-bottom:env(safe-area-inset-bottom)}
+.modal-footer .btn{flex:1;padding:14px;font-size:15px}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+.filter-row select{padding:7px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;-webkit-appearance:none;min-width:120px}
+.top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tool-card{background:#fff;border-radius:12px;padding:14px;border:1px solid #e5e5e5}
+.tool-card.need{border-color:#fde68a}
+.tool-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.tool-loc{font-size:12px;color:#888}
+.tool-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.empty{text-align:center;padding:40px 20px;color:#888;font-size:14px}
+.tag{display:inline-block;padding:2px 8px;background:#f3f4f6;border-radius:6px;font-size:11px;color:#555}
+.loading{text-align:center;padding:40px;color:#888}
+.section-label{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>Home HQ</h1>
+      <p>21 Federal City Rd · Ewing, NJ</p>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="metrics" id="metrics">
+    <div class="metric"><div class="metric-label">Projects</div><div class="metric-value">-</div></div>
+    <div class="metric"><div class="metric-label">Urgent</div><div class="metric-value">-</div></div>
+    <div class="metric"><div class="metric-label">Est. Total</div><div class="metric-value">-</div></div>
+    <div class="metric"><div class="metric-label">Tools</div><div class="metric-value">-</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('projects',this)">Projects</button>
+    <button class="tab" onclick="switchTab('tools',this)">Tools</button>
+  </div>
+
+  <div id="projects" class="section active">
+    <div class="filter-row">
+      <select onchange="renderProjects();" id="fp"><option value="">All priorities</option><option value="urgent">Urgent</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+      <select onchange="renderProjects();" id="fs"><option value="">All statuses</option><option value="planned">Planned</option><option value="in-progress">In progress</option><option value="done">Done</option></select>
+    </div>
+    <div id="project-list"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div id="tools" class="section">
+    <div class="top-row">
+      <select onchange="renderTools();" id="ftc"><option value="">All categories</option><option value="power">Power tools</option><option value="hand">Hand tools</option><option value="plumbing">Plumbing</option><option value="electrical">Electrical</option><option value="other">Other</option></select>
+      <button class="btn btn-sm" onclick="openNeedModal()">+ Need to buy</button>
+    </div>
+    <div id="tool-list"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+<button class="fab" id="fab" onclick="handleFab()">+</button>
+
+<!-- Project Modal -->
+<div class="modal-bg" id="project-modal">
+  <div class="modal">
+    <h3 id="pm-title">Add project</h3>
+    <div class="form-row"><label>Project name</label><input id="p-name" placeholder="e.g. Upstairs bathroom"/></div>
+    <div class="form-row"><label>Room / area</label><input id="p-room" placeholder="e.g. Upstairs bathroom"/></div>
+    <div class="form-row"><label>Description</label><textarea id="p-desc" placeholder="What needs to be done..."></textarea></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Priority</label><select id="p-priority"><option value="urgent">Urgent</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+      <div class="form-row"><label>Status</label><select id="p-status"><option value="planned" selected>Planned</option><option value="in-progress">In progress</option><option value="done">Done</option></select></div>
+      <div class="form-row"><label>Est. cost ($)</label><input id="p-cost" type="number" placeholder="0"/></div>
+      <div class="form-row"><label>Insurance ($)</label><input id="p-insurance" type="number" placeholder="0"/></div>
+    </div>
+    <div class="form-row"><label>Notes</label><textarea id="p-notes" placeholder="Materials, findings, plans..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('project-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tool Modal -->
+<div class="modal-bg" id="tool-modal">
+  <div class="modal">
+    <h3>Add tool</h3>
+    <div class="form-row"><label>Tool name</label><input id="t-name" placeholder="e.g. Circular saw"/></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Category</label><select id="t-cat"><option value="power">Power tool</option><option value="hand">Hand tool</option><option value="plumbing">Plumbing</option><option value="electrical">Electrical</option><option value="other">Other</option></select></div>
+      <div class="form-row"><label>Location</label><input id="t-loc" placeholder="e.g. Garage shelf 2"/></div>
+    </div>
+    <div class="form-row"><label>Notes</label><input id="t-notes" placeholder="Brand, condition..."/></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('tool-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTool()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Need Modal -->
+<div class="modal-bg" id="need-modal">
+  <div class="modal">
+    <h3>Add tool to buy/rent</h3>
+    <div class="form-row"><label>Tool name</label><input id="n-name" placeholder="e.g. Tile saw"/></div>
+    <div class="form-row"><label>Why needed</label><input id="n-why" placeholder="e.g. Bathroom tile work"/></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Est. cost ($)</label><input id="n-cost" type="number" placeholder="0"/></div>
+      <div class="form-row"><label>Buy or rent?</label><select id="n-type"><option value="buy">Buy</option><option value="rent">Rent</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('need-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNeed()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://mudrxjgnajcbplocklmk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0e-q8L2sm6jJPW6bgwkjTQ_0nhv-QFx';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let projects=[], tools=[], needs=[], editingProjectId=null, currentTab='projects';
+
+async function init(){
+  await Promise.all([loadProjects(), loadTools(), loadNeeds()]);
+  renderMetrics(); renderProjects(); renderTools();
+}
+
+async function loadProjects(){ const {data}=await sb.from('projects').select('*').order('created_at',{ascending:false}); projects=data||[]; }
+async function loadTools(){ const {data}=await sb.from('tools').select('*').order('created_at',{ascending:false}); tools=data||[]; }
+async function loadNeeds(){ const {data}=await sb.from('needs').select('*').order('created_at',{ascending:false}); needs=data||[]; }
+
+function renderMetrics(){
+  const total=projects.reduce((s,p)=>s+(+p.estimated_cost||0),0);
+  const urgent=projects.filter(p=>p.priority==='urgent'&&p.status!=='done').length;
+  document.getElementById('metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Projects</div><div class="metric-value">${projects.length}</div></div>
+    <div class="metric"><div class="metric-label">Urgent</div><div class="metric-value" style="color:#dc2626">${urgent}</div></div>
+    <div class="metric"><div class="metric-label">Est. Total</div><div class="metric-value" style="font-size:16px">$${total.toLocaleString()}</div></div>
+    <div class="metric"><div class="metric-label">Tools</div><div class="metric-value">${tools.length}</div></div>
+  `;
+}
+
+function priorityBadge(p){const m={urgent:'badge-urgent',high:'badge-high',medium:'badge-medium',low:'badge-low'};return `<span class="badge ${m[p]||'badge-medium'}">${p}</span>`;}
+function statusBadge(s){const m={'planned':'badge-planned','in-progress':'badge-inprogress','done':'badge-done'};return `<span class="badge ${m[s]||'badge-planned'}">${s}</span>`;}
+
+function renderProjects(){
+  const fp=document.getElementById('fp').value;
+  const fs=document.getElementById('fs').value;
+  const order={urgent:0,high:1,medium:2,low:3};
+  let list=[...projects].sort((a,b)=>(order[a.priority]||9)-(order[b.priority]||9));
+  if(fp) list=list.filter(p=>p.priority===fp);
+  if(fs) list=list.filter(p=>p.status===fs);
+  const el=document.getElementById('project-list');
+  if(!list.length){el.innerHTML='<div class="empty">No projects yet. Tap + to add one.</div>';return;}
+  el.innerHTML=list.map(p=>`
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">${p.name}</div><div class="card-sub">${p.room||''}</div></div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${priorityBadge(p.priority)}${statusBadge(p.status)}</div>
+      </div>
+      ${p.description?`<div class="card-desc">${p.description}</div>`:''}
+      ${p.notes?`<div class="card-notes">${p.notes}</div>`:''}
+      <div class="card-footer">
+        <div class="card-cost">Est: <strong>$${(+p.estimated_cost||0).toLocaleString()}</strong>${p.insurance_amount?` <span style="color:#16a34a">· Ins: $${(+p.insurance_amount).toLocaleString()}</span>`:''}</div>
+        <div class="btn-group">
+          <button class="btn btn-sm" onclick="editProject(${p.id})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteProject(${p.id})">Del</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTools(){
+  const fc=document.getElementById('ftc').value;
+  let myTools=fc?tools.filter(t=>t.category===fc):[...tools];
+  let myNeeds=fc?[]:[...needs];
+  const el=document.getElementById('tool-list');
+  let html='';
+  if(myTools.length){
+    html+=`<div class="section-label">I own (${myTools.length})</div><div class="tool-grid">`;
+    html+=myTools.map(t=>`
+      <div class="tool-card">
+        <div class="tool-name">${t.name}</div>
+        <div class="tool-loc">${t.location||'No location set'}</div>
+        ${t.notes?`<div class="tool-loc" style="margin-top:2px">${t.notes}</div>`:''}
+        <div class="tool-footer"><span class="tag">${t.category}</span><button class="btn btn-sm btn-danger" onclick="deleteTool(${t.id})">×</button></div>
+      </div>
+    `).join('');
+    html+='</div>';
+  }
+  if(myNeeds.length){
+    const needTotal=myNeeds.reduce((s,n)=>s+(+n.estimated_cost||0),0);
+    html+=`<div class="section-label">Need to get (${myNeeds.length}) · $${needTotal}</div><div class="tool-grid">`;
+    html+=myNeeds.map(n=>`
+      <div class="tool-card need">
+        <div class="tool-name">${n.name}</div>
+        <div class="tool-loc">${n.reason||''}</div>
+        <div class="tool-footer"><span class="badge badge-high">${n.buy_or_rent}</span><span style="font-size:13px;font-weight:600">$${+n.estimated_cost||0}</span><button class="btn btn-sm btn-danger" onclick="deleteNeed(${n.id})">×</button></div>
+      </div>
+    `).join('');
+    html+='</div>';
+  }
+  if(!html) html='<div class="empty">No tools yet. Tap + to add.</div>';
+  el.innerHTML=html;
+}
+
+function switchTab(tab,el){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tab).classList.add('active');
+}
+
+function handleFab(){
+  if(currentTab==='projects') openProjectModal();
+  else openToolModal();
+}
+
+function openProjectModal(id=null){
+  editingProjectId=id;
+  const p=id?projects.find(x=>x.id===id):null;
+  document.getElementById('pm-title').textContent=p?'Edit project':'Add project';
+  document.getElementById('p-name').value=p?.name||'';
+  document.getElementById('p-room').value=p?.room||'';
+  document.getElementById('p-desc').value=p?.description||'';
+  document.getElementById('p-priority').value=p?.priority||'medium';
+  document.getElementById('p-status').value=p?.status||'planned';
+  document.getElementById('p-cost').value=p?.estimated_cost||'';
+  document.getElementById('p-insurance').value=p?.insurance_amount||'';
+  document.getElementById('p-notes').value=p?.notes||'';
+  document.getElementById('project-modal').classList.add('open');
+}
+
+function editProject(id){openProjectModal(id);}
+
+async function saveProject(){
+  const p={name:document.getElementById('p-name').value,room:document.getElementById('p-room').value,description:document.getElementById('p-desc').value,priority:document.getElementById('p-priority').value,status:document.getElementById('p-status').value,estimated_cost:document.getElementById('p-cost').value||0,insurance_amount:document.getElementById('p-insurance').value||0,notes:document.getElementById('p-notes').value};
+  if(!p.name) return;
+  if(editingProjectId){await sb.from('projects').update(p).eq('id',editingProjectId);}
+  else{await sb.from('projects').insert(p);}
+  closeModal('project-modal');
+  await loadProjects(); renderProjects(); renderMetrics();
+}
+
+async function deleteProject(id){
+  if(!confirm('Delete this project?')) return;
+  await sb.from('projects').delete().eq('id',id);
+  await loadProjects(); renderProjects(); renderMetrics();
+}
+
+function openToolModal(){document.getElementById('t-name').value='';document.getElementById('t-loc').value='';document.getElementById('t-notes').value='';document.getElementById('tool-modal').classList.add('open');}
+function openNeedModal(){document.getElementById('n-name').value='';document.getElementById('n-why').value='';document.getElementById('n-cost').value='';document.getElementById('need-modal').classList.add('open');}
+
+async function saveTool(){
+  const t={name:document.getElementById('t-name').value,category:document.getElementById('t-cat').value,location:document.getElementById('t-loc').value,notes:document.getElementById('t-notes').value};
+  if(!t.name) return;
+  await sb.from('tools').insert(t);
+  closeModal('tool-modal');
+  await loadTools(); renderTools(); renderMetrics();
+}
+
+async function saveNeed(){
+  const n={name:document.getElementById('n-name').value,reason:document.getElementById('n-why').value,estimated_cost:document.getElementById('n-cost').value||0,buy_or_rent:document.getElementById('n-type').value};
+  if(!n.name) return;
+  await sb.from('needs').insert(n);
+  closeModal('need-modal');
+  await loadNeeds(); renderTools();
+}
+
+async function deleteTool(id){await sb.from('tools').delete().eq('id',id);await loadTools();renderTools();renderMetrics();}
+async function deleteNeed(id){await sb.from('needs').delete().eq('id',id);await loadNeeds();renderTools();}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+init();
+</script>
+</body>
+</html>
+ENDOFFILE
+echo "DONE"
+Output
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Home HQ">
+<title>Home HQ</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e5e5e5;padding:16px 20px;position:sticky;top:0;z-index:10}
+.header-inner{max-width:600px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:20px;font-weight:600}
+.header p{font-size:13px;color:#888;margin-top:2px}
+.container{max-width:600px;margin:0 auto;padding:16px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.metric{background:#fff;border-radius:12px;padding:12px;text-align:center;border:1px solid #e5e5e5}
+.metric-label{font-size:11px;color:#888;margin-bottom:4px}
+.metric-value{font-size:22px;font-weight:600}
+.tabs{display:flex;background:#fff;border-radius:12px;padding:4px;margin-bottom:16px;border:1px solid #e5e5e5}
+.tab{flex:1;padding:8px;text-align:center;font-size:14px;font-weight:500;border-radius:8px;cursor:pointer;border:none;background:none;color:#888}
+.tab.active{background:#1a1a1a;color:#fff}
+.section{display:none}.section.active{display:block}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px;border:1px solid #e5e5e5}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.card-title{font-size:15px;font-weight:600}
+.card-sub{font-size:13px;color:#888;margin-top:2px}
+.badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.badge-urgent{background:#fee2e2;color:#991b1b}
+.badge-high{background:#fef3c7;color:#92400e}
+.badge-medium{background:#dbeafe;color:#1e40af}
+.badge-low{background:#dcfce7;color:#166534}
+.badge-planned{background:#f3f4f6;color:#374151}
+.badge-inprogress{background:#fef9c3;color:#854d0e}
+.badge-done{background:#dcfce7;color:#166534}
+.card-desc{font-size:13px;color:#555;margin:8px 0;line-height:1.5}
+.card-notes{font-size:12px;color:#888;background:#f9f9f9;padding:8px 10px;border-radius:8px;margin:8px 0;line-height:1.5}
+.card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0}
+.card-cost{font-size:13px;color:#555}
+.card-cost strong{color:#1a1a1a}
+.btn{padding:8px 14px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;font-size:13px;font-weight:500;cursor:pointer;color:#1a1a1a}
+.btn:active{opacity:0.7}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-danger{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-group{display:flex;gap:6px}
+.fab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:#1a1a1a;color:#fff;font-size:24px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:17px;font-weight:600;margin-bottom:16px}
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:13px;color:#888;margin-bottom:4px;font-weight:500}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:10px 12px;border:1px solid #e5e5e5;border-radius:10px;font-size:15px;background:#fff;color:#1a1a1a;-webkit-appearance:none}
+.form-row textarea{resize:vertical;min-height:80px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-footer{display:flex;gap:8px;margin-top:16px;padding-bottom:env(safe-area-inset-bottom)}
+.modal-footer .btn{flex:1;padding:14px;font-size:15px}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+.filter-row select{padding:7px 10px;border:1px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;-webkit-appearance:none;min-width:120px}
+.top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tool-card{background:#fff;border-radius:12px;padding:14px;border:1px solid #e5e5e5}
+.tool-card.need{border-color:#fde68a}
+.tool-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.tool-loc{font-size:12px;color:#888}
+.tool-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.empty{text-align:center;padding:40px 20px;color:#888;font-size:14px}
+.tag{display:inline-block;padding:2px 8px;background:#f3f4f6;border-radius:6px;font-size:11px;color:#555}
+.loading{text-align:center;padding:40px;color:#888}
+.section-label{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>Home HQ</h1>
+      <p>21 Federal City Rd · Ewing, NJ</p>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="metrics" id="metrics">
+    <div class="metric"><div class="metric-label">Projects</div><div class="metric-value">-</div></div>
+    <div class="metric"><div class="metric-label">Urgent</div><div class="metric-value">-</div></div>
+    <div class="metric"><div class="metric-label">Est. Total</div><div class="metric-value">-</div></div>
+    <div class="metric"><div class="metric-label">Tools</div><div class="metric-value">-</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('projects',this)">Projects</button>
+    <button class="tab" onclick="switchTab('tools',this)">Tools</button>
+  </div>
+
+  <div id="projects" class="section active">
+    <div class="filter-row">
+      <select onchange="renderProjects();" id="fp"><option value="">All priorities</option><option value="urgent">Urgent</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+      <select onchange="renderProjects();" id="fs"><option value="">All statuses</option><option value="planned">Planned</option><option value="in-progress">In progress</option><option value="done">Done</option></select>
+    </div>
+    <div id="project-list"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div id="tools" class="section">
+    <div class="top-row">
+      <select onchange="renderTools();" id="ftc"><option value="">All categories</option><option value="power">Power tools</option><option value="hand">Hand tools</option><option value="plumbing">Plumbing</option><option value="electrical">Electrical</option><option value="other">Other</option></select>
+      <button class="btn btn-sm" onclick="openNeedModal()">+ Need to buy</button>
+    </div>
+    <div id="tool-list"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+<button class="fab" id="fab" onclick="handleFab()">+</button>
+
+<!-- Project Modal -->
+<div class="modal-bg" id="project-modal">
+  <div class="modal">
+    <h3 id="pm-title">Add project</h3>
+    <div class="form-row"><label>Project name</label><input id="p-name" placeholder="e.g. Upstairs bathroom"/></div>
+    <div class="form-row"><label>Room / area</label><input id="p-room" placeholder="e.g. Upstairs bathroom"/></div>
+    <div class="form-row"><label>Description</label><textarea id="p-desc" placeholder="What needs to be done..."></textarea></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Priority</label><select id="p-priority"><option value="urgent">Urgent</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+      <div class="form-row"><label>Status</label><select id="p-status"><option value="planned" selected>Planned</option><option value="in-progress">In progress</option><option value="done">Done</option></select></div>
+      <div class="form-row"><label>Est. cost ($)</label><input id="p-cost" type="number" placeholder="0"/></div>
+      <div class="form-row"><label>Insurance ($)</label><input id="p-insurance" type="number" placeholder="0"/></div>
+    </div>
+    <div class="form-row"><label>Notes</label><textarea id="p-notes" placeholder="Materials, findings, plans..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('project-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tool Modal -->
+<div class="modal-bg" id="tool-modal">
+  <div class="modal">
+    <h3>Add tool</h3>
+    <div class="form-row"><label>Tool name</label><input id="t-name" placeholder="e.g. Circular saw"/></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Category</label><select id="t-cat"><option value="power">Power tool</option><option value="hand">Hand tool</option><option value="plumbing">Plumbing</option><option value="electrical">Electrical</option><option value="other">Other</option></select></div>
+      <div class="form-row"><label>Location</label><input id="t-loc" placeholder="e.g. Garage shelf 2"/></div>
+    </div>
+    <div class="form-row"><label>Notes</label><input id="t-notes" placeholder="Brand, condition..."/></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('tool-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTool()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Need Modal -->
+<div class="modal-bg" id="need-modal">
+  <div class="modal">
+    <h3>Add tool to buy/rent</h3>
+    <div class="form-row"><label>Tool name</label><input id="n-name" placeholder="e.g. Tile saw"/></div>
+    <div class="form-row"><label>Why needed</label><input id="n-why" placeholder="e.g. Bathroom tile work"/></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Est. cost ($)</label><input id="n-cost" type="number" placeholder="0"/></div>
+      <div class="form-row"><label>Buy or rent?</label><select id="n-type"><option value="buy">Buy</option><option value="rent">Rent</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('need-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNeed()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'PASTE_YOUR_SUPABASE_URL_HERE';
+const SUPABASE_KEY = 'PASTE_YOUR_PUBLISHABLE_KEY_HERE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let projects=[], tools=[], needs=[], editingProjectId=null, currentTab='projects';
+
+async function init(){
+  await Promise.all([loadProjects(), loadTools(), loadNeeds()]);
+  renderMetrics(); renderProjects(); renderTools();
+}
+
+async function loadProjects(){ const {data}=await sb.from('projects').select('*').order('created_at',{ascending:false}); projects=data||[]; }
+async function loadTools(){ const {data}=await sb.from('tools').select('*').order('created_at',{ascending:false}); tools=data||[]; }
+async function loadNeeds(){ const {data}=await sb.from('needs').select('*').order('created_at',{ascending:false}); needs=data||[]; }
+
+function renderMetrics(){
+  const total=projects.reduce((s,p)=>s+(+p.estimated_cost||0),0);
+  const urgent=projects.filter(p=>p.priority==='urgent'&&p.status!=='done').length;
+  document.getElementById('metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Projects</div><div class="metric-value">${projects.length}</div></div>
+    <div class="metric"><div class="metric-label">Urgent</div><div class="metric-value" style="color:#dc2626">${urgent}</div></div>
+    <div class="metric"><div class="metric-label">Est. Total</div><div class="metric-value" style="font-size:16px">$${total.toLocaleString()}</div></div>
+    <div class="metric"><div class="metric-label">Tools</div><div class="metric-value">${tools.length}</div></div>
+  `;
+}
+
+function priorityBadge(p){const m={urgent:'badge-urgent',high:'badge-high',medium:'badge-medium',low:'badge-low'};return `<span class="badge ${m[p]||'badge-medium'}">${p}</span>`;}
+function statusBadge(s){const m={'planned':'badge-planned','in-progress':'badge-inprogress','done':'badge-done'};return `<span class="badge ${m[s]||'badge-planned'}">${s}</span>`;}
+
+function renderProjects(){
+  const fp=document.getElementById('fp').value;
+  const fs=document.getElementById('fs').value;
+  const order={urgent:0,high:1,medium:2,low:3};
+  let list=[...projects].sort((a,b)=>(order[a.priority]||9)-(order[b.priority]||9));
+  if(fp) list=list.filter(p=>p.priority===fp);
+  if(fs) list=list.filter(p=>p.status===fs);
+  const el=document.getElementById('project-list');
+  if(!list.length){el.innerHTML='<div class="empty">No projects yet. Tap + to add one.</div>';return;}
+  el.innerHTML=list.map(p=>`
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">${p.name}</div><div class="card-sub">${p.room||''}</div></div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">${priorityBadge(p.priority)}${statusBadge(p.status)}</div>
+      </div>
+      ${p.description?`<div class="card-desc">${p.description}</div>`:''}
+      ${p.notes?`<div class="card-notes">${p.notes}</div>`:''}
+      <div class="card-footer">
+        <div class="card-cost">Est: <strong>$${(+p.estimated_cost||0).toLocaleString()}</strong>${p.insurance_amount?` <span style="color:#16a34a">· Ins: $${(+p.insurance_amount).toLocaleString()}</span>`:''}</div>
+        <div class="btn-group">
+          <button class="btn btn-sm" onclick="editProject(${p.id})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteProject(${p.id})">Del</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTools(){
+  const fc=document.getElementById('ftc').value;
+  let myTools=fc?tools.filter(t=>t.category===fc):[...tools];
+  let myNeeds=fc?[]:[...needs];
+  const el=document.getElementById('tool-list');
+  let html='';
+  if(myTools.length){
+    html+=`<div class="section-label">I own (${myTools.length})</div><div class="tool-grid">`;
+    html+=myTools.map(t=>`
+      <div class="tool-card">
+        <div class="tool-name">${t.name}</div>
+        <div class="tool-loc">${t.location||'No location set'}</div>
+        ${t.notes?`<div class="tool-loc" style="margin-top:2px">${t.notes}</div>`:''}
+        <div class="tool-footer"><span class="tag">${t.category}</span><button class="btn btn-sm btn-danger" onclick="deleteTool(${t.id})">×</button></div>
+      </div>
+    `).join('');
+    html+='</div>';
+  }
+  if(myNeeds.length){
+    const needTotal=myNeeds.reduce((s,n)=>s+(+n.estimated_cost||0),0);
+    html+=`<div class="section-label">Need to get (${myNeeds.length}) · $${needTotal}</div><div class="tool-grid">`;
+    html+=myNeeds.map(n=>`
+      <div class="tool-card need">
+        <div class="tool-name">${n.name}</div>
+        <div class="tool-loc">${n.reason||''}</div>
+        <div class="tool-footer"><span class="badge badge-high">${n.buy_or_rent}</span><span style="font-size:13px;font-weight:600">$${+n.estimated_cost||0}</span><button class="btn btn-sm btn-danger" onclick="deleteNeed(${n.id})">×</button></div>
+      </div>
+    `).join('');
+    html+='</div>';
+  }
+  if(!html) html='<div class="empty">No tools yet. Tap + to add.</div>';
+  el.innerHTML=html;
+}
+
+function switchTab(tab,el){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tab).classList.add('active');
+}
+
+function handleFab(){
+  if(currentTab==='projects') openProjectModal();
+  else openToolModal();
+}
+
+function openProjectModal(id=null){
+  editingProjectId=id;
+  const p=id?projects.find(x=>x.id===id):null;
+  document.getElementById('pm-title').textContent=p?'Edit project':'Add project';
+  document.getElementById('p-name').value=p?.name||'';
+  document.getElementById('p-room').value=p?.room||'';
+  document.getElementById('p-desc').value=p?.description||'';
+  document.getElementById('p-priority').value=p?.priority||'medium';
+  document.getElementById('p-status').value=p?.status||'planned';
+  document.getElementById('p-cost').value=p?.estimated_cost||'';
+  document.getElementById('p-insurance').value=p?.insurance_amount||'';
+  document.getElementById('p-notes').value=p?.notes||'';
+  document.getElementById('project-modal').classList.add('open');
+}
+
+function editProject(id){openProjectModal(id);}
+
+async function saveProject(){
+  const p={name:document.getElementById('p-name').value,room:document.getElementById('p-room').value,description:document.getElementById('p-desc').value,priority:document.getElementById('p-priority').value,status:document.getElementById('p-status').value,estimated_cost:document.getElementById('p-cost').value||0,insurance_amount:document.getElementById('p-insurance').value||0,notes:document.getElementById('p-notes').value};
+  if(!p.name) return;
+  if(editingProjectId){await sb.from('projects').update(p).eq('id',editingProjectId);}
+  else{await sb.from('projects').insert(p);}
+  closeModal('project-modal');
+  await loadProjects(); renderProjects(); renderMetrics();
+}
+
+async function deleteProject(id){
+  if(!confirm('Delete this project?')) return;
+  await sb.from('projects').delete().eq('id',id);
+  await loadProjects(); renderProjects(); renderMetrics();
+}
+
+function openToolModal(){document.getElementById('t-name').value='';document.getElementById('t-loc').value='';document.getElementById('t-notes').value='';document.getElementById('tool-modal').classList.add('open');}
+function openNeedModal(){document.getElementById('n-name').value='';document.getElementById('n-why').value='';document.getElementById('n-cost').value='';document.getElementById('need-modal').classList.add('open');}
+
+async function saveTool(){
+  const t={name:document.getElementById('t-name').value,category:document.getElementById('t-cat').value,location:document.getElementById('t-loc').value,notes:document.getElementById('t-notes').value};
+  if(!t.name) return;
+  await sb.from('tools').insert(t);
+  closeModal('tool-modal');
+  await loadTools(); renderTools(); renderMetrics();
+}
+
+async function saveNeed(){
+  const n={name:document.getElementById('n-name').value,reason:document.getElementById('n-why').value,estimated_cost:document.getElementById('n-cost').value||0,buy_or_rent:document.getElementById('n-type').value};
+  if(!n.name) return;
+  await sb.from('needs').insert(n);
+  closeModal('need-modal');
+  await loadNeeds(); renderTools();
+}
+
+async function deleteTool(id){await sb.from('tools').delete().eq('id',id);await loadTools();renderTools();renderMetrics();}
+async function deleteNeed(id){await sb.from('needs').delete().eq('id',id);await loadNeeds();renderTools();}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+init();
+</script>
+</body>
+</html>
